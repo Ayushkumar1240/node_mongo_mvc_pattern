@@ -1,9 +1,17 @@
 const express = require("express")
 const path = require('path')
+const cookieparser=require('cookie-parser')
 const { connectToMongoDB } = require('./config')
+const {restrictToLoggedInUserOnly,checkAuth}=require("./middlewares/auth")
+
+const URL = require('./models/url');
+
 const urlRoute = require('./routes/url');
 const staticRouter=require("./routes/staticRouter")
-const URL = require('./models/url');
+const userRoute=require("./routes/user")
+
+
+
 const app = express();
 const PORT = 8001;
 
@@ -15,8 +23,12 @@ app.set('view engine', 'ejs');
 app.set('views', path.resolve("./views"))
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
-app.use("/url", urlRoute);
-app.use("/",staticRouter)
+app.use(cookieparser());
+
+
+app.use("/url",restrictToLoggedInUserOnly, urlRoute);
+app.use("/user",userRoute);
+app.use("/",checkAuth,staticRouter);
 app.get('/test', async (req, res) => {
     const allUrls = await URL.find({});
     // return res.end(`
